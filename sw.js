@@ -1,4 +1,4 @@
-const V='leadradar-v1',CDN='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+const V='leadradar-v5',CDN='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 const CORE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil((async()=>{
   const c=await caches.open(V);await c.addAll(CORE);
@@ -9,6 +9,8 @@ self.addEventListener('activate',e=>{e.waitUntil((async()=>{
   await self.clients.claim()})())});
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
+  const u=new URL(e.request.url);
+  if(u.origin!==location.origin&&u.href!==CDN)return;
   e.respondWith((async()=>{
     const c=await caches.open(V),hit=await c.match(e.request,{ignoreSearch:true});
     const net=fetch(e.request).then(r=>{if(r&&(r.ok||r.type==='opaque'))c.put(e.request,r.clone());return r}).catch(()=>null);
