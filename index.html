@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEAD RADAR</title>
+<meta name="theme-color" content="#FFC107">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LEAD RADAR"><meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#000;--cd:#141414;--ln:#33300f;--tx:#f5f1e0;--mu:#a39a78;--gr:#FFC107;--bl:#FFC107;--am:#FFC107;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:0 14px 110px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0 8px}
+h1{font-size:22px;margin:0;letter-spacing:1px}h1 span{color:var(--gr)}
+h2{font-size:17px;margin:18px 0 8px;color:var(--mu);font-weight:600}
+label{display:block;color:var(--mu);font-size:14px;margin:12px 0 4px}
+input,select,textarea{width:100%;min-height:52px;background:var(--cd);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:12px 14px;font:inherit}
+textarea{min-height:130px;resize:vertical}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:58px;border:0;border-radius:14px;font:inherit;font-weight:700;color:#000;background:var(--bl);text-decoration:none;margin-top:12px;cursor:pointer}
+.btn.g{background:var(--gr);color:#000}.btn.o{background:var(--cd);border:1px solid var(--ln);color:var(--tx)}.btn.off{background:#1c1c1c;color:#777;pointer-events:none}
+.btn.s{width:auto;min-height:52px;padding:0 16px;margin:0;font-size:15px}
+.row{display:flex;gap:8px;align-items:stretch}.row>*:first-child{flex:1}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:14px;padding:14px;margin:10px 0}
+.card b{font-size:18px}.mu{color:var(--mu);font-size:14px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.chip{flex:none;min-height:46px;padding:0 14px;border-radius:23px;border:1px solid var(--ln);background:var(--cd);color:var(--tx);font:inherit;font-size:15px}
+.chip.on{background:var(--gr);color:#000;border-color:var(--gr);font-weight:700}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#000;border-top:1px solid var(--ln)}
+nav button{flex:1;min-height:56px;border:0;border-radius:12px;background:transparent;color:var(--mu);font:inherit;font-size:14px;font-weight:600}
+nav button.on{background:var(--cd);color:var(--gr)}
+.res{margin-top:12px;padding:14px;border-radius:12px;background:#2a2000;border:1px solid #6b5200}
+.toast{position:fixed;left:14px;right:14px;top:calc(10px + env(safe-area-inset-top,0px));background:#1c1c1c;border:1px solid var(--gr);padding:14px;border-radius:12px;z-index:9;text-align:center}
+.lc{color:var(--am);font-size:13px;font-weight:700}
+[hidden]{display:none!important}
+</style></head><body>
+<header><h1 style="display:flex;align-items:center;gap:10px"><svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#000" stroke="#FFC107" stroke-width="3"/><g fill="none" stroke="#FFC107" stroke-width="4"><circle cx="50" cy="50" r="34"/><circle cx="50" cy="50" r="22" opacity=".7"/><circle cx="50" cy="50" r="10" opacity=".7"/></g><path d="M50 50 L50 16 A34 34 0 0 1 74 26 Z" fill="#FFC107" opacity=".45"/><line x1="50" y1="50" x2="74" y2="26" stroke="#FFC107" stroke-width="4"/><circle cx="31" cy="62" r="4" fill="#FFC107"/><circle cx="68" cy="58" r="4" fill="#FFC107"/></svg><span style="color:var(--tx)">LEAD</span> <span>RADAR</span></h1><button class="btn s g" onclick="exportar()">⬇ Excel</button></header>
+<button id="inst" class="btn g" onclick="instalar()" style="margin-top:4px">📲 INSTALAR APP</button>
+
+<section id="s-buscar">
+ <label>Pueblo</label><input id="pu" value="La Carlota" list="dl" oninput="upd()" autocomplete="off"><datalist id="dl"></datalist>
+ <label>Rubro</label>
+ <div class="row"><select id="ru" onchange="upd()"></select><button class="btn s o" onclick="$('nr').hidden=!$('nr').hidden">+ Agregar Rubro</button></div>
+ <div id="nr" hidden class="row" style="margin-top:8px"><input id="nrv" placeholder="Nuevo rubro"><button class="btn s g" onclick="addR()">Agregar</button></div>
+ <a id="gm" class="btn" target="_blank" rel="noopener" onclick="logO($('ru').value,pn())">🔍 Buscar en Google Maps</a>
+ <h2>Cargar resultados</h2>
+ <div class="mu">Una línea por negocio: Nombre | WhatsApp | Notas | Pueblo (Notas y Pueblo opcionales; si no ponés pueblo usa el de arriba).</div>
+ <textarea id="paste" placeholder="Pizzería Don Luis | 3584 123456 | abre 20hs&#10;Kiosco Sol | 3584 654321 | | Santa Eufemia"></textarea>
+ <button class="btn g" onclick="guardar()">💾 Guardar sin duplicar</button>
+ <div id="out"></div>
+</section>
+
+<section id="s-clientes" hidden>
+ <div class="chips" id="chips"></div>
+ <div class="row"><select id="fp" onchange="fp=this.value;rc()"></select></div>
+ <input id="q" placeholder="Buscar nombre, rubro, nota…" oninput="q=this.value;rc()" style="margin-top:8px">
+ <div id="list"></div>
+</section>
+
+<section id="s-hist" hidden>
+ <h2>RESULTADO (historial de búsquedas)</h2><div id="hr"></div>
+ <h2>ORDENES</h2><div id="ho"></div>
+ <p class="mu">Los datos se guardan en este teléfono. Exportá a Excel seguido para tener respaldo.</p>
+</section>
+
+<nav><button id="n-buscar" onclick="go('buscar')">🔍<br>Buscar</button><button id="n-clientes" onclick="go('clientes')">👥<br>Clientes</button><button id="n-hist" onclick="go('hist')">🕘<br>Historial</button></nav>
+<div id="t" class="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const ST=['Nuevo','Corroborado','Descartado','Contactado','En espera'];
+const R0=['Rotisería','Pizzería','Heladería','Panadería','Carnicería','Verdulería','Kiosco','Cafetería','Restaurante','Peluquería','Barbería','Estética','Farmacia','Gimnasio','Ferretería','Veterinaria','Taller','Ropa','Pet Shop'];
+const KEY='leadradar_v1';
+let D={clientes:[],ordenes:[],resultado:[],rubros:[]},tab='buscar',est='Nuevo',fp='',q='';
+try{const s=localStorage.getItem(KEY);if(s)D=Object.assign(D,JSON.parse(s))}catch(e){}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const digits=s=>String(s||'').replace(/\D/g,'');
+const isLC=c=>norm(c.pueblo)==='lacarlota';
+const pn=()=>$('pu').value.trim()||'La Carlota';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('⚠ No se pudo guardar en el teléfono. Exportá a Excel ya.')}}
+function toast(m,ms){const t=$('t');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms||2800)}
+function now(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())}
+function wa(n){let d=digits(n).replace(/^0+/,'');if(!d)return'';if(d.startsWith('54'))return d;if(d.length===12&&d.slice(4,6)==='15')d=d.slice(0,4)+d.slice(6);return d.length===10?'549'+d:d}
+function rubros(){return R0.concat(D.rubros)}
+function fillR(sel){$('ru').innerHTML=rubros().map(r=>`<option${r===sel?' selected':''}>${esc(r)}</option>`).join('')}
+function pueblos(){const s=new Set(['La Carlota']);D.clientes.forEach(c=>s.add(c.pueblo));D.ordenes.forEach(o=>s.add(o.pueblo));return[...s]}
+function upd(){$('gm').href='https://www.google.com/maps/search/'+encodeURIComponent($('ru').value+' '+pn())}
+function addR(){const v=$('nrv').value.trim();if(!v)return;if(rubros().some(r=>norm(r)===norm(v))){toast('Ese rubro ya existe');return}D.rubros.push(v);save();fillR(v);$('nrv').value='';$('nr').hidden=true;upd();toast('Rubro agregado')}
+function logO(r,p){const o=D.ordenes[0];if(o&&o.rubro===r&&o.pueblo===p&&o.fecha.slice(0,10)===now().slice(0,10))return;D.ordenes.unshift({fecha:now(),orden:'Buscar '+r+' en '+p,rubro:r,pueblo:p});save()}
+function guardar(){
+ const p=pn(),r=$('ru').value;
+ const lines=$('paste').value.split('\n').map(l=>l.trim()).filter(Boolean);
+ if(!lines.length){toast('Pegá al menos una línea');return}
+ const P=new Set(),N=new Set();
+ D.clientes.forEach(c=>{const k=digits(c.whatsapp).slice(-10);if(k.length>=8)P.add(k);N.add(norm(c.nombre)+norm(c.pueblo))});
+ let nu=0,du=0;
+ for(const l of lines){
+  const a=l.split(/[|;\t]/).map(x=>x.trim());if(!a[0])continue;
+  const pu=a[3]||p,kp=digits(a[1]).slice(-10),kn=norm(a[0])+norm(pu);
+  if((kp.length>=8&&P.has(kp))||N.has(kn)){du++;continue}
+  if(kp.length>=8)P.add(kp);N.add(kn);
+  D.clientes.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),nombre:a[0],rubro:r,pueblo:pu,whatsapp:a[1]||'',estado:'Nuevo',fecha:now(),notas:a[2]||''});nu++
+ }
+ logO(r,p);
+ D.resultado.unshift({fecha:now(),que:r+' en '+p,rubro:r,pueblo:p,nuevos:nu,dup:du});
+ save();$('paste').value='';
+ $('out').innerHTML=`<div class="res"><b>${esc(r)} en ${esc(p)}</b><br>✅ Nuevos: <b>${nu}</b> &nbsp; ♻ Duplicados saltados: <b>${du}</b></div>`;
+ fillP();
+}
+function fillP(){$('dl').innerHTML=pueblos().map(p=>`<option value="${esc(p)}">`).join('')}
+function go(t){tab=t;render()}
+function render(){
+ ['buscar','clientes','hist'].forEach(t=>{$('s-'+t).hidden=t!==tab;$('n-'+t).classList.toggle('on',t===tab)});
+ if(tab==='clientes')rc();if(tab==='hist')rh();scrollTo(0,0)
+}
+function rc(){
+ const cnt={};ST.forEach(s=>cnt[s]=0);D.clientes.forEach(c=>{cnt[c.estado]=(cnt[c.estado]||0)+1});
+ $('chips').innerHTML=ST.map(s=>`<button class="chip${s===est?' on':''}" onclick="est='${s}';rc()">${s} (${cnt[s]})</button>`).join('');
+ const pu=[...new Set(D.clientes.map(c=>c.pueblo))].sort((a,b)=>(norm(b)==='lacarlota')-(norm(a)==='lacarlota')||a.localeCompare(b));
+ if(fp&&!pu.includes(fp))fp='';
+ $('fp').innerHTML='<option value="">Todos los pueblos</option>'+pu.map(p=>`<option${p===fp?' selected':''}>${esc(p)}</option>`).join('');
+ const rows=D.clientes.filter(c=>c.estado===est&&(!fp||c.pueblo===fp)&&(!q||norm(c.nombre+c.rubro+c.pueblo+c.notas).includes(norm(q)))).sort((a,b)=>(isLC(b)-isLC(a))||b.fecha.localeCompare(a.fecha));
+ $('list').innerHTML=rows.length?rows.map(c=>{const w=wa(c.whatsapp);return`<div class="card"><b>${esc(c.nombre)}</b> ${isLC(c)?'<span class="lc">★ LA CARLOTA</span>':''}<div class="mu">${esc(c.rubro)} · ${esc(c.pueblo)} · ${esc(c.fecha)}</div><div class="mu">📱 ${esc(c.whatsapp)||'sin número'}</div><label>Notas</label><input value="${esc(c.notas)}" onchange="setN('${c.id}',this.value)"><label>Estado</label><select onchange="setE('${c.id}',this.value)">${ST.map(s=>`<option${s===c.estado?' selected':''}>${s}</option>`).join('')}</select>${w?`<a class="btn g" href="https://wa.me/${w}" target="_blank" rel="noopener">💬 Abrir WhatsApp</a>`:'<span class="btn off">💬 Sin WhatsApp</span>'}</div>`}).join(''):'<p class="mu">No hay clientes en este estado.</p>'
+}
+function setE(id,v){const c=D.clientes.find(x=>x.id===id);if(!c)return;c.estado=v;save();toast('Pasó a «'+v+'»');rc()}
+function setN(id,v){const c=D.clientes.find(x=>x.id===id);if(c){c.notas=v;save()}}
+function rh(){
+ $('hr').innerHTML=D.resultado.length?D.resultado.map((r,i)=>`<div class="card"><b>${esc(r.que)}</b><div class="mu">${esc(r.fecha)}</div>✅ Nuevos ${r.nuevos} · ♻ Duplicados ${r.dup}<button class="btn o" onclick="rep(${i})">↻ Repetir búsqueda</button></div>`).join(''):'<p class="mu">Todavía no hay búsquedas.</p>';
+ $('ho').innerHTML=D.ordenes.length?D.ordenes.map(o=>`<div class="card"><b>${esc(o.orden)}</b><div class="mu">${esc(o.fecha)}</div></div>`).join(''):'<p class="mu">Sin órdenes.</p>'
+}
+function rep(i){const r=D.resultado[i];$('pu').value=r.pueblo;fillR(r.rubro);upd();go('buscar')}
+async function exportar(){
+ try{
+  if(!window.XLSX){toast('No cargó el exportador. Abrí la app una vez con internet.');return}
+  const wb=XLSX.utils.book_new(),add=(n,rows)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),n);
+  const cl=D.clientes.slice().sort((a,b)=>(isLC(b)-isLC(a))||b.fecha.localeCompare(a.fecha));
+  add('CLIENTES',[['Nombre','Rubro','Pueblo','WhatsApp','Estado','Fecha','Notas']].concat(cl.map(c=>[c.nombre,c.rubro,c.pueblo,c.whatsapp,c.estado,c.fecha,c.notas])));
+  add('ORDENES',[['Fecha','Orden','Rubro','Pueblo']].concat(D.ordenes.map(o=>[o.fecha,o.orden,o.rubro,o.pueblo])));
+  add('RESULTADO',[['Fecha','Qué se buscó','Nuevos','Duplicados']].concat(D.resultado.map(r=>[r.fecha,r.que,r.nuevos,r.dup])));
+  const name='LEAD-RADAR_'+now().slice(0,10)+'.xlsx',dl=window.claude?await claude.use('downloads'):null;
+  if(dl)await dl.save({filename:name,data:XLSX.write(wb,{type:'array',bookType:'xlsx'})});else XLSX.writeFile(wb,name);
+ }catch(e){if(!e||e.code!=='declined')toast('No se pudo exportar')}
+}
+let dp=null;
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e});
+addEventListener('appinstalled',()=>{dp=null;$('inst').hidden=true;toast('✅ App instalada')});
+async function instalar(){
+ if(dp){const p=dp;dp=null;p.prompt();try{await p.userChoice}catch(e){}return}
+ if(window!==window.top){toast('Esta vista de prueba no se puede instalar. Abrila desde tu link propio (GitHub Pages).',6000);return}
+ toast(/iphone|ipad/i.test(navigator.userAgent)?'iPhone: botón Compartir → Agregar a inicio':'Chrome: menú ⋮ → Instalar app (o Agregar a pantalla de inicio)',6000)}
+if(standalone())$('inst').hidden=true;
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+fillR();fillP();upd();render();
+</script></body></html>
+  
