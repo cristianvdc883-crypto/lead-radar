@@ -32,17 +32,21 @@ nav button.on{background:var(--cd);color:var(--gr)}
 .res{margin-top:12px;padding:14px;border-radius:12px;background:#2a2000;border:1px solid #6b5200}
 .toast{position:fixed;left:14px;right:14px;top:calc(10px + env(safe-area-inset-top,0px));background:#1c1c1c;border:1px solid var(--gr);padding:14px;border-radius:12px;z-index:9;text-align:center}
 .lc{color:var(--am);font-size:13px;font-weight:700}
+.two{display:flex;gap:8px}.two .btn{flex:1;font-size:15px;padding:0 6px}
 [hidden]{display:none!important}
 </style></head><body>
 <header><h1 style="display:flex;align-items:center;gap:10px"><svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#000" stroke="#FFC107" stroke-width="3"/><g fill="none" stroke="#FFC107" stroke-width="4"><circle cx="50" cy="50" r="34"/><circle cx="50" cy="50" r="22" opacity=".7"/><circle cx="50" cy="50" r="10" opacity=".7"/></g><path d="M50 50 L50 16 A34 34 0 0 1 74 26 Z" fill="#FFC107" opacity=".45"/><line x1="50" y1="50" x2="74" y2="26" stroke="#FFC107" stroke-width="4"/><circle cx="31" cy="62" r="4" fill="#FFC107"/><circle cx="68" cy="58" r="4" fill="#FFC107"/></svg><span style="color:var(--tx)">LEAD</span> <span>RADAR</span></h1><button class="btn s g" onclick="exportar()">⬇ Excel</button></header>
 <button id="inst" class="btn g" onclick="instalar()" style="margin-top:4px">📲 INSTALAR APP</button>
+<div id="cl" class="mu" onclick="sync()" style="margin:8px 0 0;cursor:pointer"></div>
 
 <section id="s-buscar">
  <label>Pueblo</label><input id="pu" value="La Carlota" list="dl" oninput="upd()" autocomplete="off"><datalist id="dl"></datalist>
  <label>Rubro</label>
  <div class="row"><select id="ru" onchange="upd()"></select><button class="btn s o" onclick="$('nr').hidden=!$('nr').hidden">+ Agregar Rubro</button></div>
  <div id="nr" hidden class="row" style="margin-top:8px"><input id="nrv" placeholder="Nuevo rubro"><button class="btn s g" onclick="addR()">Agregar</button></div>
- <a id="gm" class="btn" target="_blank" rel="noopener" onclick="logO($('ru').value,pn())">🔍 Buscar en Google Maps</a>
+ <button id="abtn" class="btn g" onclick="auto()">🤖 Buscar con Google (gasta 1 de 100)</button>
+ <div id="gcount" class="mu" style="margin-top:6px"></div>
+ <a id="gm" class="btn o" target="_blank" rel="noopener" onclick="logO($('ru').value,pn())">🔍 Buscar en Google Maps</a>
  <h2>Cargar resultados</h2>
  <div class="mu">Una línea por negocio: Nombre | WhatsApp | Notas | Pueblo (Notas y Pueblo opcionales; si no ponés pueblo usa el de arriba).</div>
  <textarea id="paste" placeholder="Pizzería Don Luis | 3584 123456 | abre 20hs&#10;Kiosco Sol | 3584 654321 | | Santa Eufemia"></textarea>
@@ -54,7 +58,7 @@ nav button.on{background:var(--cd);color:var(--gr)}
  <div class="chips" id="chips"></div>
  <div class="row"><select id="fp" onchange="fp=this.value;rc()"></select></div>
  <input id="q" placeholder="Buscar nombre, rubro, nota…" oninput="q=this.value;rc()" style="margin-top:8px">
- <div id="list"></div>
+ <div id="venc"></div><div id="list"></div>
 </section>
 
 <section id="s-hist" hidden>
@@ -63,7 +67,21 @@ nav button.on{background:var(--cd);color:var(--gr)}
  <p class="mu">Los datos se guardan en este teléfono. Exportá a Excel seguido para tener respaldo.</p>
 </section>
 
-<nav><button id="n-buscar" onclick="go('buscar')">🔍<br>Buscar</button><button id="n-clientes" onclick="go('clientes')">👥<br>Clientes</button><button id="n-hist" onclick="go('hist')">🕘<br>Historial</button></nav>
+<section id="s-cfg" hidden>
+ <h2>☁ Nube (Supabase)</h2>
+ <label>URL del proyecto</label><input id="c-url" placeholder="https://xxxx.supabase.co" autocapitalize="off">
+ <label>Clave anon / publishable</label><input id="c-key" autocapitalize="off">
+ <p class="mu">⚠ <b>Solo para prueba:</b> cualquiera que tenga esta URL y esta clave puede leer, cambiar y borrar los datos de LEAD RADAR. Hay que mejorarlo con login real antes de usarlo en serio.</p>
+ <h2>🤖 Búsqueda automática (Google)</h2>
+ <label>API key de Google Places</label><input id="c-g" autocapitalize="off">
+ <label>Provincia y país</label><input id="c-zona">
+ <p class="mu">Tope fijo: 100 búsquedas por mes para toda la app (se cuenta en la nube). Al llegar, la búsqueda con Google se bloquea.</p>
+ <h2>💬 Mensaje de WhatsApp (opcional)</h2>
+ <label>Texto que aparece escrito al abrir el chat. Usá {nombre}</label><textarea id="c-msg" style="min-height:90px"></textarea>
+ <button class="btn g" onclick="saveCfg()">Guardar ajustes</button>
+ <p id="uso" class="mu"></p>
+</section>
+<nav><button id="n-buscar" onclick="go('buscar')">🔍<br>Buscar</button><button id="n-clientes" onclick="go('clientes')">👥<br>Clientes</button><button id="n-hist" onclick="go('hist')">🕘<br>Historial</button><button id="n-cfg" onclick="go('cfg')">⚙️<br>Ajustes</button></nav>
 <div id="t" class="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -79,53 +97,52 @@ const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u03
 const digits=s=>String(s||'').replace(/\D/g,'');
 const isLC=c=>norm(c.pueblo)==='lacarlota';
 const pn=()=>$('pu').value.trim()||'La Carlota';
-function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('⚠ No se pudo guardar en el teléfono. Exportá a Excel ya.')}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('⚠ No se pudo guardar en el teléfono. Exportá a Excel ya.')}}
+function save(){persist();if(cfg().url){clearTimeout(save.h);save.h=setTimeout(sync,1500)}}
 function toast(m,ms){const t=$('t');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms||2800)}
-function now(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())}
+function fmt(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())}
+function now(){return fmt(new Date())}
 function wa(n){let d=digits(n).replace(/^0+/,'');if(!d)return'';if(d.startsWith('54'))return d;if(d.length===12&&d.slice(4,6)==='15')d=d.slice(0,4)+d.slice(6);return d.length===10?'549'+d:d}
 function rubros(){return R0.concat(D.rubros)}
 function fillR(sel){$('ru').innerHTML=rubros().map(r=>`<option${r===sel?' selected':''}>${esc(r)}</option>`).join('')}
 function pueblos(){const s=new Set(['La Carlota']);D.clientes.forEach(c=>s.add(c.pueblo));D.ordenes.forEach(o=>s.add(o.pueblo));return[...s]}
 function upd(){$('gm').href='https://www.google.com/maps/search/'+encodeURIComponent($('ru').value+' '+pn())}
 function addR(){const v=$('nrv').value.trim();if(!v)return;if(rubros().some(r=>norm(r)===norm(v))){toast('Ese rubro ya existe');return}D.rubros.push(v);save();fillR(v);$('nrv').value='';$('nr').hidden=true;upd();toast('Rubro agregado')}
-function logO(r,p){const o=D.ordenes[0];if(o&&o.rubro===r&&o.pueblo===p&&o.fecha.slice(0,10)===now().slice(0,10))return;D.ordenes.unshift({fecha:now(),orden:'Buscar '+r+' en '+p,rubro:r,pueblo:p});save()}
+function logO(r,p){if(r[0]==='★')return;const o=D.ordenes[0];if(o&&o.rubro===r&&o.pueblo===p&&o.fecha.slice(0,10)===now().slice(0,10))return;const x={fecha:now(),orden:'Buscar '+r+' en '+p,rubro:r,pueblo:p};mark('o',x);D.ordenes.unshift(x);save()}
+function mk(){const P=new Set(),N=new Set(),I=new Set();D.clientes.forEach(c=>{const k=digits(c.whatsapp).slice(-10);if(k.length>=8)P.add(k);N.add(norm(c.nombre)+norm(c.pueblo));if(c.pid)I.add(c.pid)});return{P,N,I}}
+function ingest(rows,r,p,S){let nu=0,du=0;
+ for(const x of rows){const pu=x.pueblo||p,kp=digits(x.whatsapp).slice(-10),kn=norm(x.nombre)+norm(pu);
+  if((kp.length>=8&&S.P.has(kp))||S.N.has(kn)){du++;continue}
+  if(kp.length>=8)S.P.add(kp);S.N.add(kn);
+  const c={nombre:x.nombre,rubro:r,pueblo:pu,whatsapp:x.whatsapp||'',estado:'Nuevo',fecha:now(),notas:x.notas||''};mark('c',c);D.clientes.push(c);nu++}
+ return[nu,du]}
+function fin(r,p,nu,du){logO(r,p);const x={fecha:now(),que:r+' en '+p,rubro:r,pueblo:p,nuevos:nu,dup:du};mark('r',x);D.resultado.unshift(x)}
 function guardar(){
  const p=pn(),r=$('ru').value;
- const lines=$('paste').value.split('\n').map(l=>l.trim()).filter(Boolean);
- if(!lines.length){toast('Pegá al menos una línea');return}
- const P=new Set(),N=new Set();
- D.clientes.forEach(c=>{const k=digits(c.whatsapp).slice(-10);if(k.length>=8)P.add(k);N.add(norm(c.nombre)+norm(c.pueblo))});
- let nu=0,du=0;
- for(const l of lines){
-  const a=l.split(/[|;\t]/).map(x=>x.trim());if(!a[0])continue;
-  const pu=a[3]||p,kp=digits(a[1]).slice(-10),kn=norm(a[0])+norm(pu);
-  if((kp.length>=8&&P.has(kp))||N.has(kn)){du++;continue}
-  if(kp.length>=8)P.add(kp);N.add(kn);
-  D.clientes.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),nombre:a[0],rubro:r,pueblo:pu,whatsapp:a[1]||'',estado:'Nuevo',fecha:now(),notas:a[2]||''});nu++
- }
- logO(r,p);
- D.resultado.unshift({fecha:now(),que:r+' en '+p,rubro:r,pueblo:p,nuevos:nu,dup:du});
- save();$('paste').value='';
+ if(r[0]==='★'){toast('Para cargar a mano elegí un rubro');return}
+ const rows=$('paste').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const a=l.split(/[|;\t]/).map(x=>x.trim());return{nombre:a[0],whatsapp:a[1]||'',notas:a[2]||'',pueblo:a[3]||''}}).filter(x=>x.nombre);
+ if(!rows.length){toast('Pegá al menos una línea');return}
+ const[nu,du]=ingest(rows,r,p,mk());fin(r,p,nu,du);save();$('paste').value='';
  $('out').innerHTML=`<div class="res"><b>${esc(r)} en ${esc(p)}</b><br>✅ Nuevos: <b>${nu}</b> &nbsp; ♻ Duplicados saltados: <b>${du}</b></div>`;
  fillP();
 }
 function fillP(){$('dl').innerHTML=pueblos().map(p=>`<option value="${esc(p)}">`).join('')}
 function go(t){tab=t;render()}
 function render(){
- ['buscar','clientes','hist'].forEach(t=>{$('s-'+t).hidden=t!==tab;$('n-'+t).classList.toggle('on',t===tab)});
- if(tab==='clientes')rc();if(tab==='hist')rh();scrollTo(0,0)
+ ['buscar','clientes','hist','cfg'].forEach(t=>{$('s-'+t).hidden=t!==tab;$('n-'+t).classList.toggle('on',t===tab)});
+ if(tab==='clientes')rc();if(tab==='hist')rh();if(tab==='cfg')loadCfg();scrollTo(0,0)
 }
 function rc(){
- const cnt={};ST.forEach(s=>cnt[s]=0);D.clientes.forEach(c=>{cnt[c.estado]=(cnt[c.estado]||0)+1});
+ venc();const cnt={};ST.forEach(s=>cnt[s]=0);D.clientes.forEach(c=>{cnt[c.estado]=(cnt[c.estado]||0)+1});
  $('chips').innerHTML=ST.map(s=>`<button class="chip${s===est?' on':''}" onclick="est='${s}';rc()">${s} (${cnt[s]})</button>`).join('');
  const pu=[...new Set(D.clientes.map(c=>c.pueblo))].sort((a,b)=>(norm(b)==='lacarlota')-(norm(a)==='lacarlota')||a.localeCompare(b));
  if(fp&&!pu.includes(fp))fp='';
  $('fp').innerHTML='<option value="">Todos los pueblos</option>'+pu.map(p=>`<option${p===fp?' selected':''}>${esc(p)}</option>`).join('');
  const rows=D.clientes.filter(c=>c.estado===est&&(!fp||c.pueblo===fp)&&(!q||norm(c.nombre+c.rubro+c.pueblo+c.notas).includes(norm(q)))).sort((a,b)=>(isLC(b)-isLC(a))||b.fecha.localeCompare(a.fecha));
- $('list').innerHTML=rows.length?rows.map(c=>{const w=wa(c.whatsapp);return`<div class="card"><b>${esc(c.nombre)}</b> ${isLC(c)?'<span class="lc">★ LA CARLOTA</span>':''}<div class="mu">${esc(c.rubro)} · ${esc(c.pueblo)} · ${esc(c.fecha)}</div><div class="mu">📱 ${esc(c.whatsapp)||'sin número'}</div><label>Notas</label><input value="${esc(c.notas)}" onchange="setN('${c.id}',this.value)"><label>Estado</label><select onchange="setE('${c.id}',this.value)">${ST.map(s=>`<option${s===c.estado?' selected':''}>${s}</option>`).join('')}</select>${w?`<a class="btn g" href="https://wa.me/${w}" target="_blank" rel="noopener">💬 Abrir WhatsApp</a>`:'<span class="btn off">💬 Sin WhatsApp</span>'}</div>`}).join(''):'<p class="mu">No hay clientes en este estado.</p>'
+ $('list').innerHTML=rows.length?rows.map(c=>{const w=wa(c.whatsapp);return`<div class="card"><b>${esc(c.nombre)}</b> ${isLC(c)?'<span class="lc">★ LA CARLOTA</span>':''}${vence(c)?' <span class="lc">⏰ WHATSAPP +30 DÍAS</span>':''}<div class="mu">${esc(c.rubro)} · ${esc(c.pueblo)} · ${esc(c.fecha)}</div><label>WhatsApp</label><input type="tel" inputmode="tel" value="${esc(c.whatsapp)}" placeholder="Número de WhatsApp" onchange="setW('${c.id}',this.value)">${c.whatsapp?`<div class="two"><button class="btn o" onclick="copyW('${c.id}')">📋 Copiar WhatsApp</button><button class="btn o" onclick="delW('${c.id}')">🗑 Borrar WhatsApp</button></div>`:''}<label>Notas</label><input value="${esc(c.notas)}" onchange="setN('${c.id}',this.value)"><label>Estado</label><select onchange="setE('${c.id}',this.value)">${ST.map(s=>`<option${s===c.estado?' selected':''}>${s}</option>`).join('')}</select>${w?`<a class="btn g" href="https://wa.me/${w}${wt(c)}" target="_blank" rel="noopener">💬 Abrir WhatsApp</a>`:'<span class="btn off">💬 Sin WhatsApp</span>'}</div>`}).join(''):'<p class="mu">No hay clientes en este estado.</p>'
 }
-function setE(id,v){const c=D.clientes.find(x=>x.id===id);if(!c)return;c.estado=v;save();toast('Pasó a «'+v+'»');rc()}
-function setN(id,v){const c=D.clientes.find(x=>x.id===id);if(c){c.notas=v;save()}}
+function setE(id,v){const c=D.clientes.find(x=>x.id===id);if(!c)return;c.estado=v;mark('c',c);save();toast('Pasó a «'+v+'»');rc()}
+function setN(id,v){const c=D.clientes.find(x=>x.id===id);if(c){c.notas=v;mark('c',c);save()}}
 function rh(){
  $('hr').innerHTML=D.resultado.length?D.resultado.map((r,i)=>`<div class="card"><b>${esc(r.que)}</b><div class="mu">${esc(r.fecha)}</div>✅ Nuevos ${r.nuevos} · ♻ Duplicados ${r.dup}<button class="btn o" onclick="rep(${i})">↻ Repetir búsqueda</button></div>`).join(''):'<p class="mu">Todavía no hay búsquedas.</p>';
  $('ho').innerHTML=D.ordenes.length?D.ordenes.map(o=>`<div class="card"><b>${esc(o.orden)}</b><div class="mu">${esc(o.fecha)}</div></div>`).join(''):'<p class="mu">Sin órdenes.</p>'
@@ -153,6 +170,33 @@ async function instalar(){
  toast(/iphone|ipad/i.test(navigator.userAgent)?'iPhone: botón Compartir → Agregar a inicio':'Chrome: menú ⋮ → Instalar app (o Agregar a pantalla de inicio)',6000)}
 if(standalone())$('inst').hidden=true;
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-fillR();fillP();upd();render();
-</script></body></html>
-  
+const TOPE=100,MES=()=>now().slice(0,7);
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function mark(t,it){it.upd=Date.now();if(!it.id)it.id='l'+uid();if(t==='c')D.pend[it.id]=1}
+const cfg=()=>{try{return Object.assign({zona:'Córdoba, Argentina'},JSON.parse(localStorage.getItem('leadradar_cfg')))}catch(e){return{zona:'Córdoba, Argentina'}}};
+const wt=c=>{const m=cfg().msg;return m?'?text='+encodeURIComponent(m.replace(/\{nombre\}/g,c.nombre)):''};
+function loadCfg(){const c=cfg();$('c-url').value=c.url||'';$('c-key').value=c.key||'';$('c-g').value=c.g||'';$('c-zona').value=c.zona||'';$('c-msg').value=c.msg||'';usoShow()}
+function saveCfg(){const o={url:$('c-url').value.trim(),key:$('c-key').value.trim(),g:$('c-g').value.trim(),zona:$('c-zona').value.trim(),msg:$('c-msg').value};try{localStorage.setItem('leadradar_cfg',JSON.stringify(o))}catch(e){}toast('Ajustes guardados');setS();sync();usoShow()}
+function setS(k,d){const c=cfg(),t={wait:'⏳ Sincronizando…',ok:'☁ Guardado en la nube',err:'⚠ Error de nube'+(d?' ('+d+')':'')+': se reintenta'};$('cl').textContent=!c.url||!c.key?'☁ Sin nube (cargala en ⚙ Ajustes)':t[k]||'☁ Nube conectada'}
+/* tabla leads: id bigint (lo pone la base), nombre, rubro, pueblo, whatsapp, estado, notas, fecha */
+const iso=f=>{const d=new Date(String(f).replace(' ','T'));return(isNaN(d)?new Date():d).toISOString()};
+const rowOf=c=>({nombre:c.nombre,rubro:c.rubro||'',pueblo:c.pueblo||'',whatsapp:c.whatsapp||'',estado:c.estado||'Nuevo',notas:c.notas||'',fecha:iso(c.fecha)});
+function fromRow(x){return{rid:String(x.id),nombre:x.nombre||'',rubro:x.rubro||'',pueblo:x.pueblo||'',whatsapp:x.whatsapp||'',estado:ST.includes(x.estado)?x.estado:'Nuevo',notas:x.notas||'',fecha:x.fecha?fmt(new Date(x.fecha)):now()}}
+async function sb(path,opt){const c=cfg();const r=await fetch(c.url.replace(/\/$/,'')+'/rest/v1/'+path,Object.assign({},opt,{headers:Object.assign({apikey:c.key,Authorization:'Bearer '+c.key,'Content-Type':'application/json'},(opt||{}).headers)}));if(!r.ok)throw new Error('sb'+r.status);return r}
+async function push(){
+ const L=Object.keys(D.pend).map(id=>D.clientes.find(c=>c.id===id)).filter(Boolean),snap=L.map(c=>c.upd);
+ const nw=L.filter(c=>!c.rid),ed=L.filter(c=>c.rid);
+ for(let i=0;i<nw.length;i+=100){const part=nw.slice(i,i+100);
+  const a=await(await sb('leads',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(part.map(rowOf))})).json();
+  part.forEach((c,j)=>{c.rid=String(a[j].id)})}
+ for(const c of ed)await sb('leads?id=eq.'+encodeURIComponent(c.rid),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(rowOf(c))});
+ L.forEach((c,i)=>{if(c.upd===snap[i])delete D.pend[c.id]})}
+async function pull(){let from=0,all=[];
+ for(;;){const a=await(await sb('leads?select=*&order=id.asc&limit=1000&offset='+from)).json();all=all.concat(a);if(a.length<1000)break;from+=1000}
+ all.forEach(x=>{const n=fromRow(x),key=norm(n.nombre)+norm(n.pueblo);
+  const l=D.clientes.find(c=>c.rid===n.rid)||D.clientes.find(c=>!c.rid&&norm(c.nombre)+norm(c.pueblo)===key);
+  if(l){if(D.pend[l.id]){l.rid=n.rid;return}n.id=l.id;n.upd=l.upd;Object.assign(l,n)}else{n.id='r'+n.rid;n.upd=0;D.clientes.push(n)}
+  if(n.rubro&&!rubros().some(r=>norm(r)===norm(n.rubro)))D.rubros.push(n.rubro)})}
+let syncing=false;
+async function sync(){
+ const c=cfg();if(!c.url||!c.key){setS()
